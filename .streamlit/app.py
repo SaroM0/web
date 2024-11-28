@@ -59,10 +59,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Función para cargar los datos desde un archivo Excel local
 # Configuración
-json_keyfile = './data/dmx-equipo3-11c70e8505eb.json'
-sheet_url = 'https://docs.google.com/spreadsheets/d/1U2yT6RvtxwVLFfYDkgJ1MEOo-C5Qoh5T-tdnC3fIUbs/edit?usp=sharing'
+json_keyfile = './data/webxd-443102-7fed334fecbf.json'
+sheet_url = 'https://docs.google.com/spreadsheets/d/1IQkWouB4WKuSyAW5zy6jRDJpJ3VuMRbKY8MIrrOV7A0/edit?gid=924511829#gid=924511829'
 sheet_name = 'info'
 
 def load_client_data_from_google_sheet(json_keyfile, sheet_url, sheet_name):
