@@ -1,2 +1,1 @@
-venv/
-~$clientes.xlsx
+.streamlit/secrets.toml
