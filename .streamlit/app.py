@@ -1,9 +1,6 @@
 import streamlit as st
 import pandas as pd
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from google.oauth2.service_account import Credentials
-from datetime import datetime, date
+from streamlit_gsheets import GSheetsConnection
 import os
 
 # Configuración de la página
@@ -58,116 +55,35 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
+import hashlib
 # Configuración
-json_keyfile = './data/webxd-443102-7fed334fecbf.json'
-sheet_url = 'https://docs.google.com/spreadsheets/d/1IQkWouB4WKuSyAW5zy6jRDJpJ3VuMRbKY8MIrrOV7A0/edit?gid=924511829#gid=924511829'
-sheet_name = 'info'
 
-def load_client_data_from_google_sheet(json_keyfile, sheet_url, sheet_name):
-        # Definir el alcance y autorizar con las credenciales
-        scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile, scope)
-        client = gspread.authorize(creds)
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-        # Abrir el archivo de Google Sheets
-        spreadsheet = client.open_by_url(sheet_url)
-        sheet = spreadsheet.worksheet(sheet_name)
+data = conn.read()
 
-        # Obtener todos los registros
-        records = sheet.get_all_records()
+st.dataframe(data)
 
-        # Convertir los datos a un DataFrame de pandas
-        df = pd.DataFrame(records)
+def load_client_data_from_google_sheet():
+    data = conn.read()
+    df = pd.DataFrame(data)
+    if 'Solicitud_id' not in df.columns:
+        raise ValueError("La columna 'Solicitud_id' no está presente en los datos.")
+    client_data_dict = {str(row['Solicitud_id']): row.to_dict() for _, row in df.iterrows()}
+    return client_data_dict
 
-        # Validar la columna 'Solicitud_id'
-        if 'Solicitud_id' not in df.columns:
-            raise ValueError("La columna 'Solicitud_id' no está presente en los datos.")
-
-        # Convertir a un diccionario usando 'Solicitud_id' como clave
-        client_data_dict = {str(row['Solicitud_id']): row.to_dict() for _, row in df.iterrows()}
-
-        return client_data_dict
 
 # Función para guardar datos en Excel
-def save_to_google_sheet(data, json_keyfile, sheet_url, sheet_name, interaction_sheet_name="interacciones"):
+def save_to_google_sheet(data, interaction_sheet_name="interacciones"):
     try:
-        # Definir el alcance y autorizar con las credenciales
-        scope = [
-            'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive'
-        ]
-        creds = Credentials.from_service_account_file(json_keyfile, scopes=scope)
-        client = gspread.authorize(creds)
-
-        # Abrir el archivo de Google Sheets
-        spreadsheet = client.open_by_url(sheet_url)
-
-        # Trabajar con la hoja principal
-        sheet = spreadsheet.worksheet(sheet_name)
-        existing_records = sheet.get_all_records()
-        df = pd.DataFrame(existing_records)
-
-        # Si la hoja está vacía, crea un DataFrame con las columnas iniciales
-        if df.empty:
-            df = pd.DataFrame(columns=["ID del Cliente", "Decisión", "Promesa de Pago (Fecha)", "Promesa de Pago (Monto)", "Comentarios"])
-
-        # Convertir objetos de tipo fecha a cadenas y manejar valores nulos
-        for key, value in data.items():
-            if isinstance(value, (datetime, date)):
-                data[key] = value.strftime('%Y-%m-%d')
-            elif value is None:
-                data[key] = ""  # Reemplazar valores nulos con cadenas vacías
-
-        # Comprobar si el ID del Cliente ya existe en los registros
-        if "ID del Cliente" in df.columns and str(data["ID del Cliente"]) in df["ID del Cliente"].astype(str).values:
-            # Actualizar el registro existente
-            idx = df.index[df["ID del Cliente"].astype(str) == str(data["ID del Cliente"])].tolist()[0]
-            for key, value in data.items():
-                df.at[idx, key] = value
-            print(f"Registro actualizado para el ID del Cliente: {data['ID del Cliente']}")
-        else:
-            # Añadir el nuevo registro al DataFrame
-            df = pd.concat([df, pd.DataFrame([data])], ignore_index=True)
-            print(f"Nuevo registro añadido para el ID del Cliente: {data['ID del Cliente']}")
-
-        # Reemplazar valores NaN por cadenas vacías para compatibilidad con JSON
-        df = df.fillna("")
-
-        # Sobrescribir los datos en la hoja principal
-        sheet.update([df.columns.values.tolist()] + df.values.tolist())
-
-        # Trabajar con la hoja de interacciones
-        interaction_sheet = spreadsheet.worksheet(interaction_sheet_name)
-        interaction_records = interaction_sheet.get_all_records()
-        interaction_df = pd.DataFrame(interaction_records)
-
-        # Si la hoja de interacciones está vacía, crea un DataFrame con las columnas iniciales
-        if interaction_df.empty:
-            interaction_df = pd.DataFrame(columns=[
-                "ID del Cliente", "Decisión", "Fecha de Interacción", "Monto", "Comentarios"
-            ])
-
-        # Agregar los datos relevantes a la hoja de interacciones
-        interaction_data = {
-            "ID del Cliente": data["ID del Cliente"],
-            "Decisión": data["Decisión"],
-            "Fecha de Interacción": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),  # Fecha actual
-            "Monto": data.get("Promesa de Pago (Monto)", ""),
-            "Comentarios": data.get("Comentarios", "")
-        }
-        interaction_df = pd.concat([interaction_df, pd.DataFrame([interaction_data])], ignore_index=True)
-
-        # Reemplazar valores NaN por cadenas vacías para compatibilidad con JSON
-        interaction_df = interaction_df.fillna("")
-
-        # Sobrescribir los datos en la hoja de interacciones
-        interaction_sheet.update([interaction_df.columns.values.tolist()] + interaction_df.values.tolist())
-
+        df = pd.DataFrame([data])
+        conn.write(df, worksheet="info")
+        conn.write(df, worksheet=interaction_sheet_name)
         return True
     except Exception as e:
         print(f"Error al guardar o actualizar los datos: {e}")
         return False
+
 
 # Pantalla de inicio de sesión
 def login_screen():
@@ -199,7 +115,8 @@ def enter_id_screen():
     st.markdown("<div class='titulo'>Consulta de Cliente</div>", unsafe_allow_html=True)
     client_id = st.text_input("Ingresa el ID del cliente:", placeholder="Ejemplo: 12345")
     if st.button("Buscar Cliente"):
-        client_data = client_data = load_client_data_from_google_sheet(json_keyfile, sheet_url, sheet_name).get(client_id)
+        client_data_dict = load_client_data_from_google_sheet()
+        client_data = client_data_dict.get(client_id)
         if client_data:
             st.session_state["client_data"] = client_data
             st.session_state["page"] = st.session_state["role"]
@@ -262,7 +179,7 @@ def call_center_screen():
         }
 
         # Guardar en Excel
-        if save_to_google_sheet(data_to_save, json_keyfile, sheet_url, sheet_name):
+        if save_to_google_sheet(data_to_save):
             st.success("Información guardada correctamente.")
         else:
             st.error("No se pudo guardar la información.")
@@ -367,7 +284,7 @@ def gestor_screen():
         }
 
         # Guardar en Excel
-        if save_to_google_sheet(data_to_save, json_keyfile, sheet_url, sheet_name):
+        if save_to_google_sheet(data_to_save):
             st.success("Información guardada correctamente.")
         else:
             st.error("No se pudo guardar la información.")
