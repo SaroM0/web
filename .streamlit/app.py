@@ -56,12 +56,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 data = conn.read()
-
-st.dataframe(data)
 
 def load_client_data_from_google_sheet():
     data = conn.read()
