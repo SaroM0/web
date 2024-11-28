@@ -55,8 +55,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-import hashlib
-# Configuración
+
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 

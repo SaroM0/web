@@ -7,3 +7,4 @@ openpyxl
 google-cloud-storage
 google-cloud-aiplatform
 google-cloud-logging
+git+https://github.com/streamlit/gsheets-connection
