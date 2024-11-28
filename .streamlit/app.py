@@ -147,7 +147,11 @@ def call_center_screen():
 
     st.divider()
 
-    st.markdown(f"<div class='subtitulo'>Oferta Recomendada: {client_data['Mejor Oferta']}</div>", unsafe_allow_html=True)
+    mejor_oferta = client_data.get('Mejor Oferta', 'No disponible')
+
+    # Display the 'Mejor Oferta' information
+    st.markdown(f"<div class='subtitulo'>Oferta Recomendada: {mejor_oferta}</div>", unsafe_allow_html=True)
+
 
     st.divider()
 
@@ -253,7 +257,11 @@ def gestor_screen():
 
     st.divider()
 
-    st.markdown(f"<div class='subtitulo'>Oferta Recomendada: {client_data['Mejor Oferta']}</div>", unsafe_allow_html=True)
+    # Attempt to retrieve 'Mejor Oferta' from client_data; if it doesn't exist, use 'No disponible' as the default value
+    mejor_oferta = client_data.get('Mejor Oferta', 'No disponible')
+
+    # Display the 'Mejor Oferta' information
+    st.markdown(f"<div class='subtitulo'>Oferta Recomendada: {mejor_oferta}</div>", unsafe_allow_html=True)
 
     st.divider()
 
