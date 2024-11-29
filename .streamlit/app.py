@@ -69,17 +69,22 @@ def load_client_data_from_google_sheet():
     return client_data_dict
 
 
-# Función para guardar datos en Excel
-def save_to_google_sheet(data, interaction_sheet_name="interacciones"):
+def save_to_google_sheet(data, info_worksheet="info", interaction_worksheet="interacciones"):
     try:
+        # Convert data to DataFrame
         df = pd.DataFrame([data])
-        conn.write(df, worksheet="info")
-        conn.write(df, worksheet=interaction_sheet_name)
+
+        # Write to the "interacciones" worksheet
+        conn.update(
+            worksheet=interaction_worksheet,
+            data=df
+        )
+
         return True
     except Exception as e:
         print(f"Error al guardar o actualizar los datos: {e}")
         return False
-
+    
 
 # Pantalla de inicio de sesión
 def login_screen():
@@ -138,7 +143,7 @@ def call_center_screen():
 
     # Mostrar imagen según el género
     gender = client_data.get("Genero", "").upper()
-    image_path = "hombre.png" if gender == "H" else "mujer.png" if gender == "M" else None
+    image_path = "./images/hombre.png" if gender == "H" else "./images/mujer.png" if gender == "M" else None
 
     if image_path and os.path.exists(image_path):
         st.image(image_path, width=150, caption="Foto del Cliente")
@@ -204,7 +209,7 @@ def gestor_screen():
 
     # Mostrar imagen según el género
     gender = client_data.get("Genero", "").upper()
-    image_path = "hombre.png" if gender == "H" else "mujer.png" if gender == "M" else None
+    image_path = "./images/hombre.png" if gender == "H" else "./images/mujer.png" if gender == "M" else None
 
     if image_path and os.path.exists(image_path):
         st.image(image_path, width=150, caption="Foto del Cliente")
